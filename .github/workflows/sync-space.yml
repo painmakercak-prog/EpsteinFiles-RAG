@@ -16,7 +16,7 @@ jobs:
       - name: Push to the Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE: ${{ vars.HF_SPACE || 'kacarroll89/epsteinfiles-rag' }}
+          HF_SPACE: ${{ vars.HF_SPACE || 'kacarroll89/RAGSTEIN' }}
         run: |
           if [ -z "$HF_TOKEN" ]; then
             echo "HF_TOKEN secret is not set; skipping Space sync."
