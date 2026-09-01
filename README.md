@@ -3,8 +3,8 @@ title: EpsteinFiles RAG
 emoji: 📄
 colorFrom: blue
 colorTo: purple
-sdk: streamlit
-app_file: app.py
+sdk: gradio
+app_file: gradio_app.py
 pinned: false
 license: mit
 ---
