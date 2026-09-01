@@ -189,6 +189,7 @@ EpsteinFiles-RAG/
 │   ├── main.py               # API routes
 │   └── models.py             # Data models
 ├── app.py                     # Streamlit UI
+├── gradio_app.py              # Gradio UI (Hugging Face Space entrypoint)
 ├── requirements.txt           # Python dependencies
 ├── .env.example              # Environment template
 └── README.md                 # This file
