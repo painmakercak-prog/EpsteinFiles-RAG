@@ -150,6 +150,17 @@ UI opens at: `http://localhost:8501`
 
 **That's it!** You can now query through the web interface or API.
 
+### Deploy on Railway
+
+The repository includes a production Docker image, Railway configuration, a process supervisor for FastAPI + Streamlit, and a GitHub Actions CI/deploy workflow.
+
+1. Create a Railway service from this GitHub repository.
+2. Add `GROQ_API_KEY` to the service variables.
+3. Deploy. The Docker build downloads the precomputed Chroma database from Hugging Face, so the first build is large but does not repeat the embedding pipeline.
+4. Generate a public domain in Railway's Networking settings.
+
+Railway serves Streamlit on its injected `PORT`; FastAPI remains private on `127.0.0.1:8000`. The health-check path is `/_stcore/health`. If you use a Railway deploy hook instead of its GitHub integration, save the hook as the GitHub Actions secret `RAILWAY_DEPLOY_HOOK`.
+
 ---
 ## 📚 Project Structure
 

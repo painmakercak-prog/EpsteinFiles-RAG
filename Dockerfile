@@ -1,23 +1,35 @@
 FROM python:3.11-slim
 
-WORKDIR /app
-
-ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PORT=7860 \
+    CHROMA_DIR=/app/chroma_db \
     HF_HOME=/app/.cache/huggingface
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt huggingface_hub
+COPY requirements-runtime.txt ./
+RUN pip install --no-cache-dir -r requirements-runtime.txt
 
-COPY . .
-RUN chmod +x start.sh
+COPY bootstrap.py ./
+ARG DOWNLOAD_VECTOR_DB=1
+RUN if [ "$DOWNLOAD_VECTOR_DB" = "1" ]; then python bootstrap.py; fi
 
-# Hugging Face Spaces (Docker SDK) route all traffic to port 7860.
+RUN useradd --create-home --uid 10001 appuser \
+    && mkdir -p /app/.cache \
+    && chown -R appuser:appuser /app
+
+COPY --chown=appuser:appuser . .
+USER appuser
+
 EXPOSE 7860
 
-CMD ["./start.sh"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+    CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.getenv(\"PORT\", \"7860\")}/_stcore/health', timeout=5)"
+
+CMD ["python", "start.py"]

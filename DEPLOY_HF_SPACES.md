@@ -1,11 +1,11 @@
 # Deploying to Hugging Face Spaces
 
 This repo is set up to run as a single **Docker SDK** Space: the container
-starts the FastAPI backend (`api/main.py`) on `127.0.0.1:8000`, downloads the
-precomputed vector store from
+downloads and validates the precomputed vector store from
 [`devankit7873/EpsteinFiles-Vector-Embeddings-ChromaDB`](https://huggingface.co/datasets/devankit7873/EpsteinFiles-Vector-Embeddings-ChromaDB)
-on first boot, then serves the Streamlit UI (`app.py`) on the Space's public
-port. See `Dockerfile` and `start.sh` for the details.
+during the image build, then starts FastAPI on `127.0.0.1:8000` and serves the
+Streamlit UI (`app.py`) on the Space's public port. See `Dockerfile`,
+`bootstrap.py`, and `start.py` for the details.
 
 I don't have Hugging Face write/push access from this session (only
 read-only Hub tools), so the last step — creating the Space and pushing —
@@ -59,11 +59,9 @@ you haven't authenticated git to the Hub before.)
 
 ## 5. First boot
 
-The first build will take a while: the container downloads the ~1.1GB
-precomputed Chroma DB from the Hugging Face dataset before the app becomes
-reachable. Subsequent restarts re-download it too, since Spaces storage is
-ephemeral by default — enable **persistent storage** on the Space if you'd
-rather avoid that on every restart.
+The first build will take a while: the container downloads and validates the
+~1.1GB precomputed Chroma DB from the Hugging Face dataset. The completed index
+is baked into the image, so ordinary container restarts do not re-download it.
 
 ## Notes / things you may want to change
 

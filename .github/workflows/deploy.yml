@@ -1,0 +1,63 @@
+name: CI and Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: epstein-rag-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install test dependencies
+        run: pip install fastapi httpx numpy python-dotenv pytest ruff
+      - name: Check Python
+        run: |
+          ruff check . --select E9,F63,F7,F82
+          python -m compileall -q api ingest app.py bootstrap.py start.py
+      - name: Run tests
+        run: python -m pytest -q
+
+  container:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Build deployment image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          build-args: DOWNLOAD_VECTOR_DB=0
+          tags: epstein-files-rag:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: container
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Railway deployment
+        env:
+          RAILWAY_DEPLOY_HOOK: ${{ secrets.RAILWAY_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$RAILWAY_DEPLOY_HOOK" ]; then
+            curl --fail --silent --show-error --retry 3 --request POST "$RAILWAY_DEPLOY_HOOK"
+          else
+            echo "No deploy hook configured; Railway's GitHub integration can deploy this push directly."
+          fi

@@ -1,5 +1,8 @@
-import streamlit as st
+import html
+import os
+
 import requests
+import streamlit as st
 
 # -----------------------------
 # Page config
@@ -106,7 +109,7 @@ st.markdown(
 # -----------------------------
 # API
 # -----------------------------
-API_URL = "http://127.0.0.1:8000/ask"
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/ask")
 
 # -----------------------------
 # Session state (single-shot)
@@ -145,15 +148,19 @@ if ask_button and question.strip():
             )
 
             if response.status_code == 200:
-                answer = response.json().get("answer", "")
+                payload = response.json()
+                answer = payload.get("answer", "")
+                sources = payload.get("sources", [])
             else:
                 answer = "⚠️ Server error."
+                sources = []
 
         except Exception as e:
             answer = f"⚠️ API connection failed: {e}"
+            sources = []
 
     # store current Q&A only
-    st.session_state.qa = (question, answer)
+    st.session_state.qa = (question, answer, sources)
 
     # clear input box
     st.session_state.input_key += 1
@@ -163,13 +170,15 @@ if ask_button and question.strip():
 # Display single Q&A
 # -----------------------------
 if st.session_state.qa:
-    q, a = st.session_state.qa
+    q, a, sources = st.session_state.qa
+    safe_question = html.escape(q)
+    safe_answer = html.escape(a).replace("\n", "<br>")
 
     st.markdown(
         f"""
         <div class='chat user'>
             <div class='role'>Question</div>
-            {q}
+            {safe_question}
         </div>
         """,
         unsafe_allow_html=True
@@ -179,11 +188,14 @@ if st.session_state.qa:
         f"""
         <div class='chat assistant'>
             <div class='role'>Answer</div>
-            {a}
+            {safe_answer}
         </div>
         """,
         unsafe_allow_html=True
     )
+
+    if sources:
+        st.caption("Sources: " + ", ".join(str(source) for source in sources))
 
 # -----------------------------
 # Footer
@@ -201,4 +213,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
+st.caption(
+    "Research tool: a name appearing in a record does not by itself establish misconduct. "
+    "Verify important claims against the cited source document."
+)

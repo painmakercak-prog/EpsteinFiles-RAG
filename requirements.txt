@@ -1,23 +1,9 @@
-# Data / ingestion
+-r requirements-runtime.txt
+
+# Optional ingestion pipeline
 datasets
 tqdm
-
-# API
-fastapi
-uvicorn
-python-dotenv
-streamlit
-requests
-
-# LangChain (modern)
-langchain
-langchain-core
-langchain-groq
-langchain-huggingface
 langchain-chroma
+langchain-huggingface
 langchain-text-splitters
-
-# Vector DB + embeddings
-chromadb
 sentence-transformers
-huggingface_hub
