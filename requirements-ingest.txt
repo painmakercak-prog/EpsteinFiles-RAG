@@ -1,0 +1,10 @@
+# Only needed to rebuild the vector store from scratch with the ingest/ scripts.
+# Deployments use the precomputed embeddings dataset and do not install these.
+-r requirements-runtime.txt
+
+datasets
+tqdm
+langchain-chroma
+langchain-huggingface
+langchain-text-splitters
+sentence-transformers

@@ -1,74 +1,55 @@
 # Deploying to Hugging Face Spaces
 
-This repo is set up to run as a single **Docker SDK** Space: the container
-downloads and validates the precomputed vector store from
-[`devankit7873/EpsteinFiles-Vector-Embeddings-ChromaDB`](https://huggingface.co/datasets/devankit7873/EpsteinFiles-Vector-Embeddings-ChromaDB)
-during the image build, then starts FastAPI on `127.0.0.1:8000` and serves the
-Streamlit UI (`app.py`) on the Space's public port. See `Dockerfile`,
-`bootstrap.py`, and `start.py` for the details.
+This repo runs on a **free Streamlit-SDK Space** (CPU basic — 16GB RAM, no
+Docker required, since the Docker SDK is a paid Spaces feature).
 
-I don't have Hugging Face write/push access from this session (only
-read-only Hub tools), so the last step — creating the Space and pushing —
-needs to be done from your own account:
+On a Streamlit Space there is no separate API process: `app.py` detects that
+`API_URL` is unset and calls the retrieval and answering code from
+`api/main.py` directly in-process. On first search it downloads the
+precomputed vector store from
+[`devankit7873/EpsteinFiles-Vector-Embeddings-ChromaDB`](https://huggingface.co/datasets/devankit7873/EpsteinFiles-Vector-Embeddings-ChromaDB)
+via `bootstrap.py`, then caches it for the life of the container.
+
+The `Dockerfile`/`start.py` path still exists for Docker hosts (Railway, a
+local container) — there `start.py` sets `API_URL` and runs FastAPI alongside
+Streamlit, exactly as before.
 
 ## 1. Create the Space
 
 - Go to https://huggingface.co/new-space
-- Pick an owner/name, set **SDK** to **Docker**, visibility as you like.
-- Don't initialize it with a README — you'll push this repo's contents.
+- Name it (e.g. `epsteinfiles-rag`), **SDK: Streamlit**, **Hardware: CPU basic (free)**
 
-## 2. Add the Space README metadata
+## 2. Add your Groq API key
 
-Hugging Face Spaces require a YAML header at the top of the Space's
-`README.md` (this repo's own `README.md` is left untouched so GitHub
-rendering isn't affected — add this header only in the Space's copy):
-
-```yaml
----
-title: EpsteinFiles RAG
-emoji: 📄
-colorFrom: blue
-colorTo: purple
-sdk: docker
-app_port: 7860
-pinned: false
-license: mit
----
-```
-
-Prepend that to the top of `README.md` before pushing, or add it directly
-in the Space's web UI after the first push.
-
-## 3. Add your Groq API key as a Space secret
-
-In the Space's **Settings → Variables and secrets**, add:
+Space → **Settings → Variables and secrets** → new secret:
 
 - `GROQ_API_KEY` = your key from https://console.groq.com
 
-## 4. Push this repo to the Space
-
-Spaces are their own git remote:
+## 3. Push this repo
 
 ```bash
-git remote add space https://huggingface.co/spaces/<your-username>/<space-name>
-git push space claude/github-repo-deploy-g0j4hh:main
+git remote add space https://<hf-username>:<hf-write-token>@huggingface.co/spaces/<hf-username>/epsteinfiles-rag
+git push space main:main --force
 ```
 
-(Use `huggingface-cli login` first, or an access token with write scope, if
-you haven't authenticated git to the Hub before.)
+`README.md` already carries the Space YAML header (`sdk: streamlit`,
+`app_file: app.py`), so the Space picks up its configuration from this push
+with nothing to edit afterwards.
 
-## 5. First boot
+## 4. First search
 
-The first build will take a while: the container downloads and validates the
-~1.1GB precomputed Chroma DB from the Hugging Face dataset. The completed index
-is baked into the image, so ordinary container restarts do not re-download it.
+The Space builds in a couple of minutes, but the **first search** is slow: it
+downloads ~1.1GB of precomputed embeddings and loads the index. Later searches
+in the same container are fast. Spaces storage is ephemeral, so a restarted
+Space downloads it again on the next search — enable persistent storage if you
+want to avoid that.
 
-## Notes / things you may want to change
+## Notes
 
-- `ingest/` scripts are for regenerating the dataset from scratch and are
-  not used at deploy time — deployment relies on the precomputed embeddings
-  dataset instead, since embedding 100K+ chunks from a cold start would make
-  the Space take ~30–60 min to become usable.
-- The FastAPI backend isn't exposed outside the container — only the
-  Streamlit UI is reachable at the Space's public URL, which talks to the
-  API over localhost inside the same container.
+- `requirements.txt` installs runtime dependencies only. The heavier ingest
+  stack (`sentence-transformers`, `datasets`, LangChain) lives in
+  `requirements-ingest.txt` and is only needed to rebuild the vector store from
+  scratch with the `ingest/` scripts.
+- The app needs real memory — the archive is 100K+ chunks over a ~1.1GB index.
+  Free tiers with ~512MB (e.g. Railway's trial) will OOM-kill the process
+  mid-search; Spaces' free CPU basic tier has 16GB.

@@ -109,7 +109,42 @@ st.markdown(
 # -----------------------------
 # API
 # -----------------------------
-API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/ask")
+# When API_URL is set (Docker/Railway, where start.py runs FastAPI alongside the
+# UI) the question is sent over HTTP. Otherwise the retrieval and answering code
+# runs inside this Streamlit process, which is what a Streamlit-SDK Space needs.
+API_URL = os.getenv("API_URL", "").strip()
+
+
+@st.cache_resource(show_spinner=False)
+def local_pipeline():
+    from bootstrap import ensure_vector_database
+
+    ensure_vector_database()
+
+    from api.main import generate_answer, retrieve
+
+    return retrieve, generate_answer
+
+
+def answer_locally(question: str) -> tuple[str, list[str]]:
+    retrieve, generate_answer = local_pipeline()
+
+    documents = retrieve(question)
+    if not documents:
+        return "I could not find this information in the retrieved documents.", []
+
+    answer = generate_answer(question, documents)
+    sources = list(dict.fromkeys(document.source for document in documents))
+    return answer, sources
+
+
+def answer_over_http(question: str) -> tuple[str, list[str]]:
+    response = requests.post(API_URL, params={"question": question}, timeout=120)
+    if response.status_code != 200:
+        return "⚠️ Server error.", []
+
+    payload = response.json()
+    return payload.get("answer", ""), payload.get("sources", [])
 
 # -----------------------------
 # Session state (single-shot)
@@ -139,24 +174,15 @@ if ask_button and question.strip():
     # remove previous Q&A
     st.session_state.qa = None
 
-    with st.spinner("Analyzing documents…"):
+    with st.spinner("Analyzing documents… (first search loads the archive and can take a few minutes)"):
         try:
-            response = requests.post(
-                API_URL,
-                params={"question": question},
-                timeout=120
-            )
-
-            if response.status_code == 200:
-                payload = response.json()
-                answer = payload.get("answer", "")
-                sources = payload.get("sources", [])
+            if API_URL:
+                answer, sources = answer_over_http(question.strip())
             else:
-                answer = "⚠️ Server error."
-                sources = []
+                answer, sources = answer_locally(question.strip())
 
         except Exception as e:
-            answer = f"⚠️ API connection failed: {e}"
+            answer = f"⚠️ Search failed: {e}"
             sources = []
 
     # store current Q&A only
