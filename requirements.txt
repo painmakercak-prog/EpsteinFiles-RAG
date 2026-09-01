@@ -20,3 +20,4 @@ langchain-text-splitters
 # Vector DB + embeddings
 chromadb
 sentence-transformers
+huggingface_hub
