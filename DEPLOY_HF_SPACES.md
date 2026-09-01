@@ -16,7 +16,7 @@ so the Space only accepts traffic once searches can be answered.
 
 https://huggingface.co/new-space
 
-- Name: `epsteinfiles-rag`
+- Name: `RAGSTEIN`
 - SDK: **Gradio**, template **Blank**
 - Hardware: **CPU basic** (free)
 
@@ -37,7 +37,7 @@ It needs one GitHub repository secret:
 - New repository secret: `HF_TOKEN` = a Hugging Face token with **write** access
   (https://huggingface.co/settings/tokens)
 
-If the Space is not named `kacarroll89/epsteinfiles-rag`, also add a repository
+If the Space is not named `kacarroll89/RAGSTEIN`, also add a repository
 **variable** `HF_SPACE` set to `<owner>/<space-name>`.
 
 Then run the workflow from the **Actions** tab, or push any commit to `main`.
@@ -45,7 +45,7 @@ Then run the workflow from the **Actions** tab, or push any commit to `main`.
 ### Option B — manual, from a terminal
 
 ```bash
-git remote add space https://<hf-username>:<hf-write-token>@huggingface.co/spaces/<hf-username>/epsteinfiles-rag
+git remote add space https://<hf-username>:<hf-write-token>@huggingface.co/spaces/kacarroll89/RAGSTEIN
 git push space main:main --force
 ```
 
