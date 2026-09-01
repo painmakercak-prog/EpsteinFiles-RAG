@@ -1,3 +1,14 @@
+---
+title: EpsteinFiles RAG
+emoji: 📄
+colorFrom: blue
+colorTo: purple
+sdk: streamlit
+app_file: app.py
+pinned: false
+license: mit
+---
+
 # EpsteinFiles-RAG
 A RAG pipeline implementation built on the 'Epstein Files 20K' dataset from Hugging Face (Teyler).
 
@@ -105,6 +116,9 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 **3. Install dependencies**
 ```bash
 pip install -r requirements.txt
+
+# Only if you plan to rebuild the vector store with the ingest/ scripts:
+pip install -r requirements-ingest.txt
 ```
 
 **4. Configure environment**

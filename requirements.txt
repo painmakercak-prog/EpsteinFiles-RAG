@@ -1,9 +1,1 @@
 -r requirements-runtime.txt
-
-# Optional ingestion pipeline
-datasets
-tqdm
-langchain-chroma
-langchain-huggingface
-langchain-text-splitters
-sentence-transformers
