@@ -1,1 +1,4 @@
 -r requirements-runtime.txt
+
+# Hugging Face Space UI (free Gradio SDK)
+gradio>=5,<6
